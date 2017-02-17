@@ -14,7 +14,16 @@ var kmPerAu = 149598e3; // kimolmeters
 var milesPerAu = 9.296e+7; // miles
 var sol = 299792.458 // km/s
 
-app.get('/:body', cache('2 hours'), (req, res) => {
+var APIKEY = process.env.APPID;
+
+app.get('/:body', cache('2 hours'), body);
+app.use(express.static('public'));
+
+console.log('listening on port', port)
+app.listen(port);
+
+
+function body(req, res) {
   var body = req.params.body;
   getDistance(body, function(dist, time){
     var km = dist * kmPerAu;
@@ -36,15 +45,12 @@ app.get('/:body', cache('2 hours'), (req, res) => {
       credits: '2017 by 13protons. Powered by Wolfram Alpha.'
     });
   })
-})
-
-console.log('listening on port', port)
-app.listen(port);
+};
 
 function getDistance(body, cb) {
   var query = [
     'http://api.wolframalpha.com/v2/query?input='+ body + '+distance+from+earth',
-    'appid=AEWAW5-9P84R5KKJ9',
+    'appid=' + APIKEY,
     'includepodid=Result'
   ].join('&');
 
@@ -68,7 +74,7 @@ function getDistance(body, cb) {
             dist = parseFloat(au[0]);
           }
 
-          time = ((dist * kmPerAu)/sol).toFixed(3); //parseFloat(timeRegex.exec(text)[0]);
+          time = parseFloat(((dist * kmPerAu)/sol).toFixed(3)); //parseFloat(timeRegex.exec(text)[0]);
         }
         cb(dist, time);
       });
