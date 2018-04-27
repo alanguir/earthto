@@ -9,9 +9,8 @@
 
     <!-- Bootstrap -->
     <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-
-    <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/darkly/bootstrap.min.css" rel="stylesheet" integrity="sha384-S7YMK1xjUjSpEnF4P8hPUcgjXYLZKK3fQW1j5ObLSl787II9p8RO9XUGehRmKsxd" crossorigin="anonymous">
+    <link rel="stylesheet" href="bootstrap.min.css">
+    <link href="bootswatch.darkly.min.css" rel="stylesheet">
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -38,36 +37,46 @@
     <div class="row">
       <div class="col-md-6 col-md-offset-3">
         <h3>Earth To [...]</h3>
-          <p>An API for measuring how far Earth is from many common solar system objects.</p>
-        <div class="form-group">
-          <div class="input-group input-group-lg">
-            <div class="input-group-addon">Earth To:</div>
-            <select class="form-control" id="heavenlyBody">
-              <option>Sun</option>
-              <option>Mercury</option>
-              <option>Venus</option>
-              <option value="moon">The Moon</option>
-              <option selected>Mars</option>
-              <option>Jupiter</option>
-              <option>Saturn</option>
-              <option>Uranus</option>
-              <option>Neptune</option>
-              <option>Pluto</option>
-            </select>
-          </div>
-          <p>
-            <button class="btn btn-primary" id="measure" onclick="measure()">Measure</button>
-          </p>
-          <p class="text-muted"><small>2017 by 13protons. Powered by Wolfram Alpha. Updates every two hours.</small></p>
-      </div>
-
+          <p>An chat system that mimics the real delay you would experience if chatting between worlds</p>
       </div>
     </div>
+    <div class="row" id="earthto">
+      <div class="col-md-6 col-md-offset-3">
+        <div>
+          <p v-for="message in messages">{{message}}</p>
+        </div>
+        <input type="text" v-model="msg">
+        <button v-on:click="transmit(msg)">Send</button>
+      </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/vue.js"></script>
+    <script src="/js/solaris-model.min.js"></script> <!-- sets window.SolarSystem -->
     <script>
-        function measure(){
-          var obj = document.getElementById('heavenlyBody').value;
-          window.location = '/' + obj;
-        }
+        new Vue({
+          el: '#earthto',
+          data: function(){
+            return {
+              socket: undefined,
+              messages: [],
+              msg: ''
+            };
+          },
+          mounted: function(){
+            var self = this;
+            var socket = io();
+            Vue.set(self, 'socket', socket);
+            this.socket.on('transmission', function(msg){
+              self.messages.push(msg);
+            });
+          },
+          methods: {
+            transmit: function(msg) {
+              console.log('sending', msg);
+              this.socket.emit('transmission', msg);
+            }
+          }
+        })
     </script>
   </body>
 </html>

@@ -9,14 +9,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "apicache": "^0.8.3",
     "bella-scheduler": "^1.2.2",
     "express": "^4.14.1",
-    "i": "^0.3.6",
-    "npm": "^6.0.0",
-    "request": "^2.79.0",
-    "solaris-model": "^0.1.0",
-    "xml2js": "^0.4.17"
+    "socket.io": "^2.1.0",
+    "solaris-model": "^0.1.0"
   },
   "devDependencies": {
     "chai": "^3.5.0",

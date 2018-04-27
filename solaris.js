@@ -1,3 +1,32 @@
+const express = require('express');
+const PORT = process.env.PORT || 3000;
+
+var app = express();
+
+var server = require('http').Server(app);
+var io = require('socket.io')(server);
+
+app.use(express.static('public'));
+
+app.get('/', function (req, res) {
+  res.sendfile(__dirname + '/index.html');
+});
+
+console.log('listening on port', PORT)
+server.listen(PORT);
+
+io.on('connection', function (socket) {
+  console.log('a user connected');
+  socket.on('transmission', function (msg) {
+    console.log('got a message', msg);
+    console.log('re-broadcasting');
+    io.emit('transmission', msg);
+  });
+  socket.on('disconnect', function () {
+    console.log('user disconnected');
+  });
+});
+
 let SolarSystem = require('solaris-model');
 let system = new SolarSystem
 console.log(Object.keys(system.bodies)) // ['sun', 'mercury', 'venus', 'earth', 'moon', 'iss', ...] 
