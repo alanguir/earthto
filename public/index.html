@@ -38,10 +38,24 @@
       <div class="col-md-6 col-md-offset-3">
         <h3>Earth To [...]</h3>
           <p>An chat system that mimics the real delay you would experience if chatting between worlds</p>
+
+
       </div>
     </div>
     <div class="row" id="earthto">
       <div class="col-md-6 col-md-offset-3">
+        Chatting as {{name || '\'no name\''}} from {{planet}}<br>
+
+        <input type="text" v-model="name" placeholder="Your Name">
+        <select v-model="planet" @change="loadPlanet(planet)">
+          <option v-for="option in planetSelect" v-bind:value="option.value">
+            {{ option.text }}
+          </option>
+        </select>
+
+      </div>
+
+      <div class="col-md-6 col-md-offset-3" v-show="name && planet">
         <div>
           <p v-for="message in messages">{{message}}</p>
         </div>
@@ -49,31 +63,107 @@
         <button v-on:click="transmit(msg)">Send</button>
       </div>
     </div>
+    <script src="/js/browser-cuid.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/vue.js"></script>
     <script src="/js/solaris-model.min.js"></script> <!-- sets window.SolarSystem -->
     <script>
+        var system = new SolarSystem;
+        console.log(Object.keys(system.bodies));
+
         new Vue({
           el: '#earthto',
           data: function(){
             return {
               socket: undefined,
+              name: '',
+              planet: '',
               messages: [],
-              msg: ''
+              msg: '',
+              id: '',
+              position: [],
+              bodies: Object.keys(system.bodies)
             };
           },
           mounted: function(){
             var self = this;
             var socket = io();
+
+            this.ensureID();
+            this.loadPlanet();
+            this.updatePosition();
+
             Vue.set(self, 'socket', socket);
             this.socket.on('transmission', function(msg){
               self.messages.push(msg);
             });
+
+            setInterval(this.updatePosition, 1000 * 60);
+          },
+          computed: {
+            planetSelect: function(){
+              return Object.keys(system.bodies).map(function(val, key){
+                return {text: val, value: val};
+              })
+            }
           },
           methods: {
             transmit: function(msg) {
-              console.log('sending', msg);
-              this.socket.emit('transmission', msg);
+
+              var payload = {
+                broadcastTime: Date.now(),
+                position: this.position,
+                planet: this.planet,
+                name: this.name,
+                senderID: this.id,
+                message: msg
+              }
+
+              console.log('sending', payload);
+              this.socket.emit('transmission', payload);
+            },
+            ensureID: function() {
+              var uid = window.localStorage.getItem('uid');
+              if (!uid) {
+                uid = cuid();
+                window.localStorage.setItem('uid', uid);
+              }
+              this.id = uid;
+              console.log('uid', uid);
+            },
+            loadPlanet: function(name) {
+              console.log('load planet', name);
+              var self = this;
+
+              if (name) {
+                setPlanet(name);
+              } else {
+                var planet = window.localStorage.getItem('planet');
+                
+                if (!planet) { planet = 'earth'; }
+                setPlanet(planet);
+              }
+              
+              function setPlanet(name) {
+                self.planet = name;
+                window.localStorage.setItem('planet', name);
+              }
+
+              console.log('planet', self.planet);
+            },
+            updatePosition: function() {
+              system.setTime(new Date());
+              var planet = system.bodies[this.planet];
+              console.log('updating position', planet, this.planet);
+
+              this.position = absPos(planet);
+              return this.position;
+
+              function absPos(planet) {
+                return planet.position.map(function (val, i) {
+                  return val + planet.central.position[i];
+                });
+              }
             }
           }
         })
