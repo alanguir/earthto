@@ -1,83 +1,70 @@
-var request = require('request');
-var parseString = require('xml2js').parseString;
-var cache = require('apicache').middleware
-var express = require('express');
-var port = process.env.PORT || 3000;
-var get = require('lodash/get');
+const express = require('express');
+const PORT = process.env.PORT || 3000;
 
 var app = express();
 
-var auRegex = /\d+?\.?\d+ au/;
-var milesRegex = /\d+? miles/;
-var timeRegex = /\d+?\.?\d+ light minutes/;
-var kmPerAu = 149598e3; // kimolmeters
-var milesPerAu = 9.296e+7; // miles
-var sol = 299792.458 // km/s
+var server = require('http').Server(app);
+var io = require('socket.io')(server);
 
-var APIKEY = process.env.APPID;
+app.use(express.static('dist'));
 
-app.get('/:body', cache('2 hours'), body);
-app.use(express.static('public'));
+app.get('/', function (req, res) {
+  res.sendfile(__dirname + '/index.html');
+});
 
-console.log('listening on port', port)
-app.listen(port);
+console.log('listening on port', PORT)
+server.listen(PORT);
+
+io.on('connection', function (socket) {
+  console.log('a user connected');
+  socket.broadcast.emit('users', 'a user connected');
+  socket.on('transmission', function (msg) {
+    console.log('got a message', msg);
+    console.log('re-broadcasting');
+    io.emit('transmission', msg);
+  });
+  socket.on('disconnect', function () {
+    console.log('user disconnected');
+  });
+});
+
+let SolarSystem = require('solaris-model');
+let system = new SolarSystem
+console.log(Object.keys(system.bodies)) // ['sun', 'mercury', 'venus', 'earth', 'moon', 'iss', ...] 
+
+const SOL = 299792458;
+system.setTime(new Date())
+
+let earth = system.bodies.earth;
+let mars = system.bodies.moon;
+console.log(earth.central.position);
+
+console.log('earth.position', earth.position) // [0, 0, 0] 
+console.log('mars.position', mars.position) // [0, 0, 0] 
+let d = distance(earth, mars);
+console.log('earth mars distance', d, transitTime(d))
 
 
-function body(req, res) {
-  var body = req.params.body;
-  getDistance(body, function(dist, time){
-    var km = dist * kmPerAu;
-    var Mkm = (km / 1e6).toFixed(2);
+function distance(planet1, planet2) {
+  let p1 = absPos(planet1);
+  let p2 = absPos(planet2);
 
-    var minutes = (time / 60).toFixed(2);
-    var message = 'Could not determine the distance between earth and ' + body + '.';
+  let x = Math.pow((p2[0] - p1[0]), 2)
+  let y = Math.pow((p2[1] - p1[1]), 2)
+  let z = Math.pow((p2[2] - p1[2]), 2)
 
-    if (dist > 0 && time > 0) {
-      message = body + ' is currently ' + dist + ' au from Earth ('+ Mkm +' M km). It would take any message ' + minutes + ' minutes to travel between the two bodies.';
-    }
-
-    res.json({
-      time: time,
-      timeUnits: 'light seconds',
-      au: dist,
-      km: km,
-      message: message,
-      credits: '2017 by 13protons. Powered by Wolfram Alpha.'
-    });
-  })
-};
-
-function getDistance(body, cb) {
-  var query = [
-    'http://api.wolframalpha.com/v2/query?input='+ body + '+distance+from+earth',
-    'appid=' + APIKEY,
-    'includepodid=Result'
-  ].join('&');
-
-  request(query, function (error, response, body) {
-    if (!error && response.statusCode == 200) {
-      parseString(body, function (err, result) {
-        if (err) {
-          console.error('Err: ', err);
-          return;
-        }
-
-        var dist = 0;
-        var time = 0;
-        var text = get(result, 'queryresult.pod[0].subpod[0].plaintext', '');
-        if (text.length) {
-          var miles = milesRegex.exec(text);
-          var au = auRegex.exec(text);
-          if (miles) {
-            dist = parseFloat(miles[0]) / milesPerAu;
-          } else if (au) {
-            dist = parseFloat(au[0]);
-          }
-
-          time = parseFloat(((dist * kmPerAu)/sol).toFixed(3)); //parseFloat(timeRegex.exec(text)[0]);
-        }
-        cb(dist, time);
-      });
-    }
-  })
+  return Math.sqrt(x + y + z);
 }
+
+function absPos(planet) {
+  return planet.position.map(function(val, i){
+    return val + planet.central.position[i];
+  });
+}
+
+function transitTime(distance) {
+  return distance/SOL
+}
+
+//1.46509328863.4344
+//1.313×10 ^ 11 meters
