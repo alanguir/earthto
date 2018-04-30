@@ -1,6 +1,8 @@
 import Vue from 'vue';
 import _ from 'lodash';
 
+const cuid = require('cuid');
+
 // eslint-disable-next-line
 const system = new SolarSystem;
 const EventBus = new Vue();
@@ -11,8 +13,16 @@ const store = new Data();
 //   })
 // }
 
-export {system, EventBus, store} 
+export {system, EventBus, store, wrapMessage} 
 export default EventBus;
+
+function wrapMessage(content) {
+  return _.assign({
+    content: content,
+    timestamp: Date.now(),
+    messageId: 'm-' + cuid()
+  }, store.get())
+}
 
 function Data() {
   var model = window.localStorage.getItem('earthTo');
@@ -21,7 +31,7 @@ function Data() {
       name: '',
       planet: 'earth',
       avatarId: '',
-      uid: require('cuid')(),
+      uid: cuid(),
       _firstRun: true
     }
     

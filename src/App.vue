@@ -8,11 +8,19 @@
       v-if="shouldOnboard"
     ></on-board>
     
+    <chat 
+      :planet="model.planet" 
+      :name="model.name"
+      :avatar-id="model.avatarId"
+      :history="messageHistory"
+      v-if="!shouldOnboard"
+    ></chat>
   </div>
 </template>
 
 <script>
-import {EventBus, store} from './components/util.js';
+import {EventBus, store, wrapMessage} from './components/util.js';
+import Chat from './components/Chat.vue';
 import OnBoard from './components/OnBoard.vue';
 import NavBar from './components/NavBar.vue';
 
@@ -21,20 +29,28 @@ export default {
   data: function() {
     return {
       model: store.get(),
-      showSettings: false
+      showSettings: false,
+      messageHistory: []
     }
   },
   components: {
     OnBoard,
-    NavBar
+    NavBar,
+    Chat
   },
   mounted: function(){
     EventBus.$on('launch', this.updateModel);
+    EventBus.$on('transmit', this.transmitMessage);
   },
   methods: {
     updateModel: function(){
       console.log('updating model');
       this.model = store.get();
+    },
+    transmitMessage: function(data) {
+      let message = wrapMessage(data);
+      console.log('transmission', message);
+      this.messageHistory.push(message);
     }
   },
   computed: {

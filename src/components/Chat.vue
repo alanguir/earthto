@@ -1,41 +1,133 @@
 <template>
-<div class="row">
-      <div class="col-md-6 col-md-offset-3">
-        <h3>Earth To [...]</h3>
-          <p>An chat system that mimics the real delay you would experience if chatting between worlds</p>
-      </div>
-
-      <div class="col-md-6 col-md-offset-3">
-        Chatting as {{name || '\'no name\''}} from {{planet}}<br>
-
-        <input type="text" v-model="name" placeholder="Your Name">
-        <select v-model="planet" @change="loadPlanet(planet)">
-          <!-- <option v-for="option in planetSelect" v-bind:value="option.value"> -->
-            <!-- {{ option.text }} -->
-          <!-- </option> -->
-        </select>
-      </div>
-
-      <div class="col-md-6 col-md-offset-3" v-show="name && planet">
-        <div>
-          <!-- <p v-for="message in messages">{{message}}</p> -->
+  <div id="chat">
+    <div class="messages">
+      <div class="message" v-for="message in history" :key="message.messageId">
+        <div class="avatar">
+          <img :src="avatarById(message.avatarId)">
         </div>
-        <input type="text" v-model="msg" v-on:keyup.13="transmit">
-        <button v-on:click="transmit">Send</button>
+        <div class="content">
+          <div class="meta">
+            <strong>{{message.name}}</strong>
+            - Sent from <strong>{{ planetById(message.planet).name }}</strong> at {{ legibleTime(message.timestamp) }}
+          </div>
+          {{message.content}}
+        </div>
       </div>
     </div>
+    <div class="transmit">
+      <div class="icon"><img :src="avatarSrc"></div>
+      <div class="input">
+        <textarea 
+          :placeholder="'Transmitting from ' + planetName + '.'"
+          v-model="msg"
+          @keydown.13.exact.prevent="send">
+        </textarea>
+      </div>
+      <div class="status">+/-</div>
+    </div>
+  </div>
 </template>
-<script></script>
-<style>
-      /* body {
-        background-image: url('/images/stars.png');
-        background-size: cover;
-        text-align: center;
+<script>
+  import {EventBus, system, store} from './util.js';
+  import Vue from 'vue';
+
+  export default {
+    name: 'Chat',
+    props: ['planet', 'name', 'avatarId', 'history'],
+    data: function() {
+      return {
+        msg: '',
+        queue: []
       }
-      .row {
-        padding-top: 3em;
+    },
+    computed: {
+      planetName: function(){
+        return this.planetById(this.planet).name;
+      },
+      avatarSrc: function() {
+        return this.avatarById(this.avatarId);
       }
-      p {
-        padding: 1em 0;
-      } */
-    </style>
+    },
+    methods: {
+      avatarById: function(id) {
+        return `/images/avatars/${id}.png`;
+      },
+      planetById: function(id){
+        return system.bodies[id] || system.bodies.sun;
+      },
+      send: function() {
+        console.log('add to send queue', this.msg);
+        
+        EventBus.$emit('transmit', this.msg);
+        Vue.nextTick(() => {
+          Vue.set(this, 'msg', '');
+        })
+        
+      },
+      legibleTime: function(ts) {
+        return new Date(ts).toString();
+      }
+    }
+  }
+</script>
+<style lang="less">
+  .messages {
+   text-align: left;
+   .message {
+    display: flex;
+    padding-bottom: 1em;
+   }
+   .avatar {
+     width: 32px;
+     height: 32px;
+     background-color: white;
+     img {
+       width: 100%;
+     }
+   }
+   .content {
+     flex-grow: 1;
+     padding-left: 1em;
+     .meta {
+       font-size: 80%;
+       color: #aaa;
+     }
+   }
+  }
+  .transmit {
+    display: flex;
+    width: 100%;
+    height: 64px;
+    position: absolute;
+    bottom: 2em;
+    left: 0;
+    padding: 1em;
+    box-sizing: border-box;
+    > * {
+      background-color: #888;
+      height: 64px;
+    }
+    .icon {
+      width: 65px;
+      border-right: 1px solid gray;
+      border-bottom: none;
+      img {
+        width: 100%;
+      }
+    }
+    .input {
+      flex-grow: 1;
+      textarea {
+        height: 100%;
+        border: none;
+        resize: none;
+        border-radius: 0px;
+      }
+    }
+    
+    .status {
+      width: 65px;
+      border-left: 1px solid gray;
+    }
+  }
+</style>
