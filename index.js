@@ -32,8 +32,12 @@ let SolarSystem = require('solaris-model');
 let system = new SolarSystem
 console.log(Object.keys(system.bodies)) // ['sun', 'mercury', 'venus', 'earth', 'moon', 'iss', ...] 
 
-const SOL = 299792458;
+const SOL = 299792.458;
 system.setTime(new Date())
+
+let sun = system.bodies.sun;
+
+console.log(Object.keys(sun.satellites))
 
 let earth = system.bodies.earth;
 let mars = system.bodies.moon;

@@ -28,7 +28,7 @@
   </div>
 </template>
 <script>
-  import {EventBus, system, store} from './util.js';
+  import {EventBus, system/*, store*/} from './util.js';
   import Vue from 'vue';
 
   export default {

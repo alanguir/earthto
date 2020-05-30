@@ -8,7 +8,7 @@
     <h3>Where are you connecting from?</h3>
     <p>
       <select v-model="selectedPlanet">
-        <option v-for="planet in orderedBodies" :value="planet.value">
+        <option v-for="planet in orderedBodies" :value="planet.value" v-bind:key="planet.value">
           <span v-if="planet.isSat">&nbsp;&nbsp;&nbsp;&nbsp;</span>
           {{planet.text}}
         </option>
